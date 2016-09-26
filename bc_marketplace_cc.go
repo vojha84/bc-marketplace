@@ -2458,21 +2458,21 @@ func CreateUser(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 		
 		_, err := GetBuyer(stub, key)
 		if err!=nil {
-			fmt.Println("CreateUser: Could not create user %s ",err)
+			fmt.Println("CreateUser: Could not create user  ",err)
 			return nil, err
 		}
 
 	}else if affiliation == SELLER_A{
 		_, err := GetSeller(stub, key)
 		if err!=nil {
-			fmt.Println("CreateUser: Could not create user %s ",err)
+			fmt.Println("CreateUser: Could not create user  ",err)
 			return nil, err
 		}
 		
 	}else if affiliation == BANK_A{
 		_, err := GetBank(stub, key)
 		if err!=nil {
-			fmt.Println("CreateUser: Could not create user %s ",err)
+			fmt.Println("CreateUser: Could not create user  ",err)
 			return nil, err
 		}
 		
@@ -2480,7 +2480,7 @@ func CreateUser(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 	}else if affiliation == APPRAISER_A{
 		_, err := GetAppraiser(stub, key)
 		if err!=nil {
-			fmt.Println("CreateUser: Could not create user %s ",err)
+			fmt.Println("CreateUser: Could not create user  ",err)
 			return nil, err
 		}
 		
@@ -2493,9 +2493,12 @@ func CreateUser(stub *shim.ChaincodeStub, args []string) ([]byte, error) {
 		}
 		
 		
+	}else{
+		return nil, errors.New("Invalid user type")
 	}
 		
-		return nil, errors.New("Invalid user type")
+	fmt.Println("CreateUser: Successfully created user with ID: "+id)
+	return []byte(id), nil
 	
 
 }
