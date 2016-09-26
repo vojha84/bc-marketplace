@@ -2670,9 +2670,38 @@ func (t *MarketplaceChaincode) Query(stub *shim.ChaincodeStub, function string, 
 			fmt.Println("Error from GetSalesContract")
 			return nil, err
 		} else {
-			fmt.Println("All success, returning ma")
+			fmt.Println("All success, returning sales contract")
 			return bytes, nil		 
 		}
+	}else if function == "GetPropertyAds" {
+		fmt.Println("Getting GetPropertyAds")
+		_, bytes, err := GetPropertyAds(stub)
+		if err != nil {
+			fmt.Println("Error from GetPropertyAds")
+			return nil, err
+		} else {
+			fmt.Println("All success, returning property ads")
+			return bytes, nil		 
+		}
+	}else if function == "GetPropertyAd" {
+		fmt.Println("Getting GetPropertyAd")
+		_, bytes, err := GetPropertyAd(stub, args[0])
+		if err != nil {
+			fmt.Println("Error from GetPropertyAd")
+			return nil, err
+		} else {
+			fmt.Println("All success, returning property ad")
+			return bytes, nil		 
+		}
+	}else if function == "GetMortgageApplications" {
+		fmt.Println("Getting GetMortgageApplications")
+		return GetMortgageApplications(stub, username, affiliation, args)
+	}else if function == "GetAppraiserApplications" {
+		fmt.Println("Getting GetAppraiserApplications")
+		return GetAppraiserApplications(stub, username, affiliation, args)
+	}else if function == "GetSalesContracts" {
+		fmt.Println("Getting GetSalesContracts")
+		return GetSalesContracts(stub, username, affiliation, args)
 	}else if function == "GetAuditorMALogs" {
 		fmt.Println("Getting GetAuditorMALogs")
 		return GetAuditorMALogs(stub, username, affiliation, args)
