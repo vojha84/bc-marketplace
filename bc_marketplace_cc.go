@@ -2584,10 +2584,6 @@ Returns all transaction records for this blockchain network
 func GetAuditorBCLogs(stub *shim.ChaincodeStub, callerId string, callerAffiliation int, args []string) ([]byte, error){
 	fmt.Println("GetAuditorBCLogs")
 	
-	if len(args) < 1{
-		fmt.Println("GetAuditorBCLogs: Mortgage Application ID missing")
-		return nil, errors.New("Mortgage Application ID missing")
-	}
 
 	if callerAffiliation != AUDITOR_A{
 		fmt.Println("GetAuditorBCLogs: caller "+callerId+" does not have rights to access auditor logs")
