@@ -266,6 +266,7 @@ type MAUpdateSchema struct {
 	Status string `json:"status"`
 	SalesContractId string `json:"salesContractId"`
 	FairMarketValue int `json:"fairMarketValue"`
+	ApprovedAmount int `json:"approvedAmount"`
 }
 
 type AAUpdateSchema struct{
@@ -400,7 +401,7 @@ func generatePropertyAdsList(stub *shim.ChaincodeStub)([4]PropertyAd, error){
 	var propertyAds [4] PropertyAd
 
 
-	propertyAd1 := PropertyAd{"propertyAd1", "land1", "permit1", "property1", "description", "66 Madison Ave, Apartment no: 102, New York, Ny", "jack24", "Bank Of America", 1000000, nowTime.Format("2006-01-02 15:04:05")}
+	propertyAd1 := PropertyAd{"propertyAd1", "land1", "permit1", "property1", "description", "	", "jack24", "Bank Of America", 1000000, nowTime.Format("2006-01-02 15:04:05")}
 	propertyAd2 := PropertyAd{"propertyAd2", "land2", "permit2", "property2", "description", "2156 Madison Ave, Apartment no: 202, New York, Ny", "mark14", "Wells Fargo Mortgage", 1500000, nowTime.Format("2006-01-02 15:04:05")}
 	propertyAd3 := PropertyAd{"propertyAd3", "land3", "permit3", "property3", "description","660 Madison Ave, Apartment no: 302, New York, Ny", "jane24", "CitiMortgage", 2000000, nowTime.Format("2006-01-02 15:04:05")}
 	propertyAd4 := PropertyAd{"propertyAd4", "land4", "permit4", "property4", "description","200 Madison Ave, Apartment no: 402, New York, Ny", "bill24", "JP Morgan", 2500000, nowTime.Format("2006-01-02 15:04:05")}
@@ -1242,6 +1243,7 @@ func UpdateMortgageApplication(stub *shim.ChaincodeStub, callerId string, caller
 	var updates MAUpdateSchema
 	var statusChanged bool = false
 	var scIdChanged bool = false
+	var amChanged bool = false
 
 	ma, _, err := GetMortgageApplication(stub, callerId, AUDITOR_A, []string{id})
 	if err != nil {	
@@ -1279,7 +1281,20 @@ func UpdateMortgageApplication(stub *shim.ChaincodeStub, callerId string, caller
 			
 		}
 
-		if statusChanged == true || scIdChanged == true{
+		approvedAmount :=  updates.ApprovedAmount
+		
+		if approvedAmount != 0 {
+			ma.ApprovedAmount = approvedAmount
+			if statusChanged == true || scIdChanged == true{
+				msg += "and updated approved amount to "+strconv.Itoa(approvedAmount)+"."
+			}else {
+				msg += callerId+" updated approved amount to "+strconv.Itoa(approvedAmount)+"."
+			}
+			amChanged = true
+
+		}
+
+		if statusChanged == true || scIdChanged == true || amChanged == true{
 			bytes, err := SaveMortgageApplication(stub, ma, id)
 			if err != nil {
 				fmt.Println("SaveMortgageApplication: Could not save mortgageApplication ",err)
