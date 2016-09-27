@@ -299,23 +299,31 @@ type MALogHolder struct {
 /**
 Generate initial set of land records
 **/
-func generateLandRecords(stub *shim.ChaincodeStub)([4]Land, error){
+func generateLandRecords(stub *shim.ChaincodeStub)([8]Land, error){
 	fmt.Println("Entering generateLandRecords")
 	nowTime := time.Now()
 
-	var landRecords [4] Land
+	var landRecords [8] Land
 
 	land1 := Land{"land1", "Residential area", "Madison Ave, New York, Ny", "jack24", nowTime.Format("2006-01-02 15:04:05")}
 	land2 := Land{"land2", "Residential area", "Fremont, California, CA", "mark14", nowTime.Format("2006-01-02 15:04:05")}
 	land3 := Land{"land3", "Residential area", "San Francisco, California, CA", "jane24", nowTime.Format("2006-01-02 15:04:05")}
 	land4 := Land{"land4", "Residential area", "Los Angeles, California, CA", "bill24", nowTime.Format("2006-01-02 15:04:05")}
+	land5 := Land{"land5", "Residential area", "Madison Ave, New York, Ny", "jack24", nowTime.Format("2006-01-02 15:04:05")}
+	land6 := Land{"land6", "Residential area", "Fremont, California, CA", "mark14", nowTime.Format("2006-01-02 15:04:05")}
+	land7 := Land{"land7", "Residential area", "San Francisco, California, CA", "jane24", nowTime.Format("2006-01-02 15:04:05")}
+	land8 := Land{"land8", "Residential area", "Los Angeles, California, CA", "bill24", nowTime.Format("2006-01-02 15:04:05")}
 
 	landRecords[0] = land1
 	landRecords[1] = land2
 	landRecords[2] = land3
 	landRecords[3] = land4
+	landRecords[4] = land5
+	landRecords[5] = land6
+	landRecords[6] = land7
+	landRecords[7] = land8
 	
-	var landKeys[4]string
+	var landKeys[8]string
 
 	for j := 0; j < len(landRecords); j++ {
       fmt.Println(landRecords[j] )
@@ -346,24 +354,32 @@ func generateLandRecords(stub *shim.ChaincodeStub)([4]Land, error){
 /**
 Generate list of registered properties
 **/
-func generatePropertyList(stub *shim.ChaincodeStub)([4]Property, error){
+func generatePropertyList(stub *shim.ChaincodeStub)([8]Property, error){
 	fmt.Println("Entering generatePropertyList")
 	nowTime := time.Now()
 
-	var propertyList [4] Property
+	var propertyList [8] Property
 
 	property1 := Property{"property1", "land1", "permit1",  "Residential House", "4305 22nd street, Flushing, New York, Ny", "jack24", 500000, nowTime.Format("2006-01-02 15:04:05")}
 	property2 := Property{"property2", "land2", "permit2",  "Residential House", "2156 Madison Ave, New York, Ny", "mark14", 500000, nowTime.Format("2006-01-02 15:04:05")}
 	property3 := Property{"property3", "land3", "permit3",  "Residential House", "660 Madison Ave, New York, Ny", "jane24",  500000, nowTime.Format("2006-01-02 15:04:05")}
 	property4 := Property{"property4", "land4", "permit4",  "Residential House", "200 Madison Ave, New York, Ny", "bill24",  500000, nowTime.Format("2006-01-02 15:04:05")}
+	property5 := Property{"property5", "land5", "permit5",  "Residential House", "4305 22nd street, Flushing, New York, Ny", "jack24", 500000, nowTime.Format("2006-01-02 15:04:05")}
+	property6 := Property{"property6", "land6", "permit6",  "Residential House", "2156 Madison Ave, New York, Ny", "mark14", 500000, nowTime.Format("2006-01-02 15:04:05")}
+	property7 := Property{"property7", "land7", "permit7",  "Residential House", "660 Madison Ave, New York, Ny", "jane24",  500000, nowTime.Format("2006-01-02 15:04:05")}
+	property8 := Property{"property8", "land8", "permit8",  "Residential House", "200 Madison Ave, New York, Ny", "bill24",  500000, nowTime.Format("2006-01-02 15:04:05")}
 
 
 	propertyList[0] = property1
 	propertyList[1] = property2
 	propertyList[2] = property3
 	propertyList[3] = property4
+	propertyList[4] = property5
+	propertyList[5] = property6
+	propertyList[6] = property7
+	propertyList[7] = property8
 	
-	var pKeys[4]string
+	var pKeys[8]string
 
 	for j := 0; j < len(propertyList); j++ {
       fmt.Println(propertyList[j] )
@@ -394,25 +410,33 @@ func generatePropertyList(stub *shim.ChaincodeStub)([4]Property, error){
 /**
 Generate list of Properties for sale
 **/
-func generatePropertyAdsList(stub *shim.ChaincodeStub)([4]PropertyAd, error){
+func generatePropertyAdsList(stub *shim.ChaincodeStub)([8]PropertyAd, error){
 	fmt.Println("Entering generatePropertyAdsList")
 	nowTime := time.Now()
 
-	var propertyAds [4] PropertyAd
+	var propertyAds [8] PropertyAd
 
 
-	propertyAd1 := PropertyAd{"propertyAd1", "land1", "permit1", "property1", "description", "	", "jack24", "Bank Of America", 1000000, nowTime.Format("2006-01-02 15:04:05")}
+	propertyAd1 := PropertyAd{"propertyAd1", "land1", "permit1", "property1", "description", "704 Madison Ave, Apartment no: 402, New York, Ny", "jack24", "Bank Of America", 1000000, nowTime.Format("2006-01-02 15:04:05")}
 	propertyAd2 := PropertyAd{"propertyAd2", "land2", "permit2", "property2", "description", "2156 Madison Ave, Apartment no: 202, New York, Ny", "mark14", "Wells Fargo Mortgage", 1500000, nowTime.Format("2006-01-02 15:04:05")}
 	propertyAd3 := PropertyAd{"propertyAd3", "land3", "permit3", "property3", "description","660 Madison Ave, Apartment no: 302, New York, Ny", "jane24", "CitiMortgage", 2000000, nowTime.Format("2006-01-02 15:04:05")}
 	propertyAd4 := PropertyAd{"propertyAd4", "land4", "permit4", "property4", "description","200 Madison Ave, Apartment no: 402, New York, Ny", "bill24", "JP Morgan", 2500000, nowTime.Format("2006-01-02 15:04:05")}
+	propertyAd5 := PropertyAd{"propertyAd5", "land5", "permit5", "property5", "description", "704 Madison Ave, Apartment no: 402, New York, Ny", "jack24", "Bank Of America", 1000000, nowTime.Format("2006-01-02 15:04:05")}
+	propertyAd6 := PropertyAd{"propertyAd6", "land6", "permit6", "property6", "description", "2156 Madison Ave, Apartment no: 202, New York, Ny", "mark14", "Wells Fargo Mortgage", 1500000, nowTime.Format("2006-01-02 15:04:05")}
+	propertyAd7 := PropertyAd{"propertyAd7", "land7", "permit7", "property7", "description","660 Madison Ave, Apartment no: 302, New York, Ny", "jane24", "CitiMortgage", 2000000, nowTime.Format("2006-01-02 15:04:05")}
+	propertyAd8 := PropertyAd{"propertyAd8", "land1", "permit1", "property1", "description", "704 Madison Ave, Apartment no: 402, New York, Ny", "jack24", "CitiMortgage", 1000000, nowTime.Format("2006-01-02 15:04:05")}
 
 
 	propertyAds[0] = propertyAd1
 	propertyAds[1] = propertyAd2
 	propertyAds[2] = propertyAd3
 	propertyAds[3] = propertyAd4
+	propertyAds[4] = propertyAd5
+	propertyAds[5] = propertyAd6
+	propertyAds[6] = propertyAd7
+	propertyAds[7] = propertyAd8
 	
-	var paKeys[4]string
+	var paKeys[8]string
 
 	for j := 0; j < len(propertyAds); j++ {
       fmt.Println(propertyAds[j] )
@@ -1614,7 +1638,7 @@ func CreateSalesContract(stub *shim.ChaincodeStub, callerId string, callerAffili
 	bas := bank.SalesContracts
 	bank.SalesContracts = append(bas, salesContractId)
 
-	err = SaveBank(stub, bank, userKey)
+	err = SaveBank(stub, bank, bankKey)
 
 	if err != nil {	
 		fmt.Printf("CreateSalesContract: Failed to store updated user with id"+ bankKey + ": %s", err)
