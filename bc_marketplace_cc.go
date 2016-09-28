@@ -1742,7 +1742,7 @@ func UpdateSalesContract(stub *shim.ChaincodeStub, callerId string, callerAffili
 
 		ss := strings.TrimSpace(updates.SellerSignature)
 		if len(ss) > 0{
-			ma.BuyerSignature = ss
+			ma.SellerSignature = ss
 			logs = append(logs, "Seller: "+ma.SellerId+" Signed")
 		}
 
