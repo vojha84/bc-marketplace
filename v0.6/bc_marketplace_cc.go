@@ -38,10 +38,10 @@ import (
 	"errors"
 	"fmt"
 	"time"
-	"crypto/x509"
-	"encoding/pem"
+	//"crypto/x509"
+	//"encoding/pem"
 	"net/http"
-	"net/url"
+	//"net/url"
     "io/ioutil"
     "strconv"
 	"strings"
@@ -516,12 +516,15 @@ func GetEcert(stub shim.ChaincodeStubInterface, name string) ([]byte, error) {
 
 func GetUsername(stub shim.ChaincodeStubInterface) (string, error) {
 
-	bytes, err := stub.GetCallerCertificate();
+	/*bytes, err := stub.GetCallerCertificate();
 															if err != nil { return "", errors.New("Couldn't retrieve caller certificate") }
 	x509Cert, err := x509.ParseCertificate(bytes);				// Extract Certificate from result of GetCallerCertificate						
 															if err != nil { return "", errors.New("Couldn't parse certificate")	}
 															
-	return x509Cert.Subject.CommonName, nil
+	return x509Cert.Subject.CommonName, nil*/
+	username, err := stub.ReadCertAttribute("username");
+	if err != nil { return "", errors.New("Couldn't get attribute 'username'. Error: " + err.Error()) }
+	return string(username), nil
 }
 
 //==============================================================================================================================
@@ -529,9 +532,9 @@ func GetUsername(stub shim.ChaincodeStubInterface) (string, error) {
 // 				  		certificates common name. The affiliation is stored as part of the common name.
 //==============================================================================================================================
 
-func CheckAffiliation(stub shim.ChaincodeStubInterface, cert string) (int, error) {																																																					
+func CheckAffiliation(stub shim.ChaincodeStubInterface) (string, []byte, error) {																																																					
 	
-	decodedCert, err := url.QueryUnescape(cert);    				// make % etc normal //
+	/*decodedCert, err := url.QueryUnescape(cert);    				// make % etc normal //
 	
 															if err != nil { return -1, errors.New("Could not decode certificate") }
 	
@@ -547,7 +550,13 @@ func CheckAffiliation(stub shim.ChaincodeStubInterface, cert string) (int, error
 	
 	affiliation, _ := strconv.Atoi(res[2])
 	
-	return affiliation, nil
+	return affiliation, nil*/
+	affiliation, err := stub.ReadCertAttribute("role");
+	if err != nil { return "", nil, errors.New("Couldn't get attribute 'role'. Error: " + err.Error()) }
+
+	affiliationStr := string(affiliation)
+
+	return affiliationStr, []byte(affiliationStr), nil
 }
 
 //==============================================================================================================================
@@ -2743,6 +2752,16 @@ func (t *MarketplaceChaincode) Query(stub shim.ChaincodeStubInterface, function 
 	}else if function == "GetAuditorBCLogs" {
 		fmt.Println("Getting GetAuditorBCLogs")
 		return GetAuditorBCLogs(stub, username, affiliation, args)
+	}else if function == "GetCallerAffiliation" {
+		fmt.Println("Getting GetCallerAffiliation")
+		_, bytes, err := CheckAffiliation(stub)
+		if err != nil {
+			fmt.Println("Error from CheckAffiliation")
+			return nil, err
+		} else {
+			fmt.Println("All success, returning user role")
+			return bytes, nil		 
+		}
 	}
 
 	return nil, errors.New("Invalid function name")
