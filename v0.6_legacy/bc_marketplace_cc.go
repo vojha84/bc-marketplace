@@ -15,12 +15,22 @@ limitations under the License.
 
 Licensed Materials - Property of IBM
 © Copyright IBM Corp. 2016
-
-@Author: Varun Ojha
-@Version: 2.0
-@Description: Chaicode compiant with version 0.6 of hyperledger fabric
 */
 package main
+
+/*import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strconv"
+	"time"
+    "strings"
+    "github.com/hyperledger/fabric/core/chaincode/shim"
+    "github.com/vojha84/uuid"
+
+	
+)*/
+
 
 import (
 	
@@ -28,6 +38,11 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	//"crypto/x509"
+	//"encoding/pem"
+	"net/http"
+	//"net/url"
+    "io/ioutil"
     "strconv"
 	"strings"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -465,51 +480,88 @@ func InitKeys(stub shim.ChaincodeStubInterface, keyType string)([]byte, error){
 }
 
 
+
 //==============================================================================================================================
-//	 GetUsername - Retrieves the username of the user who invoked the chaincode.
+//	 get_ecert - Takes the name passed and calls out to the REST API for HyperLedger to retrieve the ecert
+//				 for that user. Returns the ecert as retrived including html encoding.
+//==============================================================================================================================
+func GetEcert(stub shim.ChaincodeStubInterface, name string) ([]byte, error) {
+	
+	var cert ECertResponse
+	
+	peer_address, err := stub.GetState("Peer_Address")
+															if err != nil { return nil, errors.New("Error retrieving peer address") }
+
+	response, err := http.Get("http://"+string(peer_address)+"/registrar/"+name+"/ecert") 	// Calls out to the HyperLedger REST API to get the ecert of the user with that name
+    
+															if err != nil { return nil, errors.New("Error calling ecert API") }
+	
+	defer response.Body.Close()
+	contents, err := ioutil.ReadAll(response.Body)					// Read the response from the http callout into the variable contents
+	
+															if err != nil { return nil, errors.New("Could not read body") }
+	
+	err = json.Unmarshal(contents, &cert)
+	
+															if err != nil { return nil, errors.New("Could not retrieve ecert for user: "+name) }
+															
+	return []byte(string(cert.OK)), nil
+}
+
+//==============================================================================================================================
+//	 get_caller - Retrieves the username of the user who invoked the chaincode.
 //				  Returns the username as a string.
 //==============================================================================================================================
 
 
-func GetCertAttribute(stub shim.ChaincodeStubInterface, attributeName string) (string, []byte, error) {
-	fmt.Println("Entering GetCertAttribute")
-	attr, err := stub.ReadCertAttribute(attributeName)
-	if err != nil { return "", nil, errors.New("Couldn't get attribute "+attributeName+". Error: " + err.Error()) }
-	attrString := string(attr)
-	return attrString, []byte(attrString), nil
-}
-
 func GetUsername(stub shim.ChaincodeStubInterface) (string, error) {
-	fmt.Println("Entering GetUsername");
 
-	username, err := stub.ReadCertAttribute("username")
+	/*bytes, err := stub.GetCallerCertificate();
+															if err != nil { return "", errors.New("Couldn't retrieve caller certificate") }
+	x509Cert, err := x509.ParseCertificate(bytes);				// Extract Certificate from result of GetCallerCertificate						
+															if err != nil { return "", errors.New("Couldn't parse certificate")	}
+															
+	return x509Cert.Subject.CommonName, nil*/
+	username, err := stub.ReadCertAttribute("username");
 	if err != nil { return "", errors.New("Couldn't get attribute 'username'. Error: " + err.Error()) }
 	return string(username), nil
 }
 
 //==============================================================================================================================
-//	 CheckAffiliation - Affiliation is mapped to role attribute
+//	 check_affiliation - Takes an ecert as a string, decodes it to remove html encoding then parses it and checks the
+// 				  		certificates common name. The affiliation is stored as part of the common name.
 //==============================================================================================================================
 
-func CheckAffiliation(stub shim.ChaincodeStubInterface) (int, error) {																																																					
-	fmt.Println("Entering CheckAffiliation");
+func CheckAffiliation(stub shim.ChaincodeStubInterface) (string, []byte, error) {																																																					
+	
+	/*decodedCert, err := url.QueryUnescape(cert);    				// make % etc normal //
+	
+															if err != nil { return -1, errors.New("Could not decode certificate") }
+	
+	pem, _ := pem.Decode([]byte(decodedCert))           				// Make Plain text   //
 
-	affiliation, err := stub.ReadCertAttribute("role")
-	if err != nil { return -1, errors.New("Couldn't get attribute 'role'. Error: " + err.Error()) }
+	x509Cert, err := x509.ParseCertificate(pem.Bytes);				// Extract Certificate from argument //
+														
+															if err != nil { return -1, errors.New("Couldn't parse certificate")	}
+
+	cn := x509Cert.Subject.CommonName
+	
+	res := strings.Split(cn,"\\")
+	
+	affiliation, _ := strconv.Atoi(res[2])
+	
+	return affiliation, nil*/
+	affiliation, err := stub.ReadCertAttribute("role");
+	if err != nil { return "", nil, errors.New("Couldn't get attribute 'role'. Error: " + err.Error()) }
 
 	affiliationStr := string(affiliation)
-	affiliationInt, err := strconv.Atoi(affiliationStr)
-	if err != nil {
-		fmt.Println("Could not convert affiliation string to int value: "+ err.Error())
-		return -1, err
-	}
 
-	return affiliationInt, nil
+	return affiliationStr, []byte(affiliationStr), nil
 }
 
 //==============================================================================================================================
-//	 GetCallerMetadata - Calls the GetUsername and CheckAffiliation methods to get caller metadata
-//					 
+//	 get_caller_data - Calls the get_ecert and check_role functions and returns the ecert and role for the
+//					 name passed.
 //==============================================================================================================================
 
 func GetCallerMetadata(stub shim.ChaincodeStubInterface) (string, int, error){
@@ -526,11 +578,13 @@ func GetCallerMetadata(stub shim.ChaincodeStubInterface) (string, int, error){
 		fmt.Println(username)
 
 
-	affiliation, err := CheckAffiliation(stub)
+	user, err := GetUser(stub, username)
 	if err !=nil {
-		fmt.Println("GetCallerMetadata: Could not get affiliation for caller"); 
+		fmt.Println("GetCallerMetadata: Could not get user with ID: %s %s", username, err); 
 		return "", -1, err
 	}
+
+	affiliation := user.Affiliation
 
 	return username, affiliation, nil
 }
@@ -803,7 +857,289 @@ func GetSalesContracts(stub shim.ChaincodeStubInterface, callerId string, caller
 	return nil, errors.New("GetSalesContracts: callerId "+callerId+ " cannot access sales contracts")
 }
 
+/**
+Fetch list of all sales contracts for a user
+**/
+/*func (t *MarketplaceChaincode) GetSalesContracts(stub shim.ChaincodeStubInterface, id string, affiliation int) ([]byte, error){
+	
+	fmt.Println("Entering GetSalesContracts")
 
+	var salesContracts []string
+	var key = "";
+
+
+	if(affiliation == BUYER_A){
+		key = buyerKeysName
+	}else if(affiliation == SELLER_A){
+		key = sellerKeysName
+	}else if(affiliation == BANK_A){
+		key = bankKeysName
+	}else if(affiliation == AUDITOR_A){
+		key = auditorKeysName
+	}else{
+		fmt.Println("GetSalesContracts: Invalid affiliation")
+		return nil, errors.New("Invalid affiliation")
+	}
+		
+	// Get list of all the keys representing user
+	keysBytes, err := stub.GetState(key)
+	if err != nil {
+		fmt.Println("Error retrieving user keys")
+		return nil, errors.New("Error retrieving user keys")
+	}
+	var keys []string
+	err = json.Unmarshal(keysBytes, &keys)
+	if err != nil {
+		fmt.Println("Error unmarshalling user keys")
+		return nil, errors.New("Error unmarshalling user keys")
+	}
+
+	// Get all the users
+	for _, value := range keys {
+		uBytes, err := stub.GetState(value)
+		
+		if(affiliation == BUYER_A){
+			var user Buyer
+			err = json.Unmarshal(uBytes, &user)
+			if err != nil {
+				fmt.Println("Error unmarshalling buyer " + value)
+				return nil, errors.New("Error unmarshalling buyer " + value)
+			}
+
+			if user.ID == id {
+				salesContracts = user.SalesContracts
+				scBytes, _ := json.Marshal(&salesContracts)
+				return scBytes, nil
+			}
+			
+		}else if(affiliation == SELLER_A){
+			var user Bank
+			err = json.Unmarshal(uBytes, &user)
+			if err != nil {
+				fmt.Println("Error unmarshalling bank " + value)
+				return nil, errors.New("Error unmarshalling bank " + value)
+			}
+
+			if user.ID == id {
+				salesContracts = user.SalesContracts
+				scBytes, _ := json.Marshal(&salesContracts)
+
+				return scBytes, nil
+			}
+
+		}else if(affiliation == BANK_A){
+			var user Bank
+			err = json.Unmarshal(uBytes, &user)
+			if err != nil {
+				fmt.Println("Error unmarshalling bank " + value)
+				return nil, errors.New("Error unmarshalling bank " + value)
+			}
+
+			if user.ID == id {
+				salesContracts = user.SalesContracts
+				scBytes, _ := json.Marshal(&salesContracts)
+
+				return scBytes, nil
+			}
+
+		}else if(affiliation == AUDITOR_A){
+			var user Auditor
+			err = json.Unmarshal(uBytes, &user)
+			if err != nil {
+				fmt.Println("Error unmarshalling auditor " + value)
+				return nil, errors.New("Error unmarshalling auditor " + value)
+			}
+
+			if user.ID == id {
+				salesContracts = user.SalesContracts
+				scBytes, _ := json.Marshal(&salesContracts)
+				return scBytes, nil
+			}
+
+			
+		}
+
+		
+		
+	}	
+	
+	fmt.Println("GetSalesContracts: User with id "+id+ "not found")
+	return nil, nil
+}*/
+
+
+/**
+Get mortgage application for a particular user by id
+**/
+/*func (t *MarketplaceChaincode) GetSalesContract(stub shim.ChaincodeStubInterface, userId string, affiliation int, contractId string) ([]byte, error){
+	
+	fmt.Println("Entering GetSalesContract")
+
+	var mortgageApplication MortgageApplication
+	var key = "";
+
+
+	if(affiliation == BUYER_A){
+		key = buyerKeysName
+	}else if(affiliation == BANK_A){
+		key = bankKeysName
+	}else if(affiliation == AUDITOR_A){
+		key = auditorKeysName
+	}else{
+		fmt.Println("GetMortgageApplications: Invalid affiliation")
+		return nil, errors.New("Invalid affiliation")
+	}
+		
+	// Get list of all the keys representing user
+	keysBytes, err := stub.GetState(key)
+	if err != nil {
+		fmt.Println("Error retrieving user keys")
+		return nil, errors.New("Error retrieving user keys")
+	}
+	var keys []string
+	err = json.Unmarshal(keysBytes, &keys)
+	if err != nil {
+		fmt.Println("Error unmarshalling user keys")
+		return nil, errors.New("Error unmarshalling user keys")
+	}
+
+	// Get all the users
+	for _, value := range keys {
+		uBytes, err := stub.GetState(value)
+		
+		if(affiliation == BUYER_A){
+			var user Buyer
+			err = json.Unmarshal(uBytes, &user)
+			if err != nil {
+				fmt.Println("Error unmarshalling buyer " + value)
+				return nil, errors.New("Error unmarshalling buyer " + value)
+			}
+
+			if user.ID == userId {
+				mortgageApplications := user.MortgageApplications
+				for _, ma := range mortgageApplications{
+					if ma == mortgageId {
+						maBytes, _ := json.Marshal(&ma)
+						return maBytes, nil
+					}
+				}
+				
+			}
+			
+		}else if(affiliation == BANK_A){
+			var user Bank
+			err = json.Unmarshal(uBytes, &user)
+			if err != nil {
+				fmt.Println("Error unmarshalling bank " + value)
+				return nil, errors.New("Error unmarshalling bank " + value)
+			}
+
+			if user.ID == userId {
+				mortgageApplications := user.MortgageApplications
+				for _, ma := range mortgageApplications{
+					if ma.ID == mortgageId {
+						maBytes, _ := json.Marshal(&ma)
+						return maBytes, nil
+					}
+				}
+			}
+
+		}else if(affiliation == AUDITOR_A){
+			var user Auditor
+			err = json.Unmarshal(uBytes, &user)
+			if err != nil {
+				fmt.Println("Error unmarshalling auditor " + value)
+				return nil, errors.New("Error unmarshalling auditor " + value)
+			}
+
+			if user.ID == id {
+				mortgageApplications := user.mortgageApplications
+				for _, ma := range mortgageApplications{
+					if ma.ID == mortgageId {
+						maBytes, _ := json.Marshal(&ma)
+						return maBytes, nil
+					}
+				}
+			}
+
+			
+		}
+
+		
+		
+	}	
+	
+	fmt.Println("GetMortgageApplications: Mortgage Application with id "+mortgageId+ " not found for user with id "+userId)
+	return nil, nil
+}*/
+
+/**
+Create a new mortgage application
+Add the key to the list of mortgage application keys
+Add the key to the list of mortgage applications keys associated with a user
+**/
+
+
+/*func CreateMortgageApplication(stub shim.ChaincodeStubInterface, callerId string, callerAffiliation int , args[]string) ([]byte, error){
+	fmt.Println("Entering CreateMortgageApplication")
+
+	mortgageApplicationInput := args[0]
+	var mortgageApplication MortgageApplication
+
+	mortgageApplicationId, _ := GetUUID()
+	fmt.Println(mortgageApplicationId)
+	
+	err := json.Unmarshal([]byte(mortgageApplicationInput), &mortgageApplication)
+	if err != nil {
+		fmt.Println("Error unmarshalling mortgageApplicationInput string " + mortgageApplicationInput+" %s",err)
+		return nil, errors.New("Error unmarshalling mortgageApplicationInput string " + mortgageApplicationInput)
+	}
+
+	fmt.Println("HEEEEEEEEEEEEEEEEEEE ")
+	mortgageApplication.ID = mortgageApplicationId
+
+	fmt.Println("CreateMortgageApplication: Created new Mortgage Application with ID "+mortgageApplicationId)
+	fmt.Println(mortgageApplication)
+
+	maBytes, _ := json.Marshal(&mortgageApplication)
+
+	maKey, err  := GetStateKey(mortgageApplication.ID, MORTGAGEAPPLICATION)
+
+	fmt.Println("Generated mortgageApplication key "+maKey)
+
+	err = stub.PutState(maKey, maBytes)
+	if err != nil {
+		fmt.Println("Error saving mortgageApplication "+mortgageApplication.ID +" to state")
+		return nil, errors.New("Error saving mortgageApplication "+mortgageApplication.ID +" to state")
+	}
+
+	ok, err := AddMortgageApplicationKey(stub, maKey)
+
+	fmt.Println(ok)
+
+	if err != nil {
+		return nil, err
+	}
+
+	userKey, err := GetStateKey(callerId, BUYER)
+	
+	user, err := GetBuyer(stub, userKey)		
+
+	mas := user.MortgageApplications
+	user.MortgageApplications = append(mas, maKey)
+
+	err = SaveBuyer(stub, user, userKey)
+
+	if err != nil {	
+		fmt.Printf("CreateMortgageApplication: Failed to store updated user with id"+ userKey + ": %s", err)
+		return nil, errors.New("CreateMortgageApplication: Failed to store updated user with id"+ userKey ) 
+	}
+
+	fmt.Println("Here...............")
+	
+	return maBytes, nil
+}
+*/
 
 func CreateMortgageApplication(stub shim.ChaincodeStubInterface, callerId string, callerAffiliation int , args[]string) ([]byte, error){
 	fmt.Println("Entering CreateMortgageApplication")
@@ -2333,18 +2669,6 @@ func (t *MarketplaceChaincode) Query(stub shim.ChaincodeStubInterface, function 
 		return nil, errors.New("Incorrect number of arguments. Expecting ......")
 	}*/
 
-	if function == "GetCertAttribute" {
-		fmt.Println("Getting GetCertAttribute")
-		_, bytes, err := GetCertAttribute(stub, args[0])
-		if err != nil {
-			fmt.Println("Error from GetCertAttribute")
-			return nil, err
-		} else {
-			fmt.Println("All success, returning attribute")
-			return bytes, nil		 
-		}
-	}
-
 	username, affiliation, err := GetCallerMetadata(stub)
 	if err !=nil {
 		return nil, err
@@ -2428,6 +2752,16 @@ func (t *MarketplaceChaincode) Query(stub shim.ChaincodeStubInterface, function 
 	}else if function == "GetAuditorBCLogs" {
 		fmt.Println("Getting GetAuditorBCLogs")
 		return GetAuditorBCLogs(stub, username, affiliation, args)
+	}else if function == "GetCallerAffiliation" {
+		fmt.Println("Getting GetCallerAffiliation")
+		_, bytes, err := CheckAffiliation(stub)
+		if err != nil {
+			fmt.Println("Error from CheckAffiliation")
+			return nil, err
+		} else {
+			fmt.Println("All success, returning user role")
+			return bytes, nil		 
+		}
 	}
 
 	return nil, errors.New("Invalid function name")
