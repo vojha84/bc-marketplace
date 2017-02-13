@@ -58,6 +58,7 @@ func CreateWayBill(stub shim.ChaincodeStubInterface, args []string) ([]byte, err
 }
 
 func (t *SampleChaincode) Init(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	fmt.Println("Inside INIT for test chaincode")
 	return nil, nil
 }
 
