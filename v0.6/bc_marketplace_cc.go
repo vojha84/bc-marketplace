@@ -899,7 +899,7 @@ func UpdateMortgageApplication(stub shim.ChaincodeStubInterface, callerId string
 	}
 
 	id := args[0]
-	lmd := args[1]
+	lmd := args[len(args)-1]
 
 	var currentStatus string
 	var updates MAUpdateSchema
@@ -1120,7 +1120,7 @@ func UpdateAppraiserApplication(stub shim.ChaincodeStubInterface, callerId strin
 	}
 
 	id := args[0]
-	lmd := args[1]
+	lmd := args[len(args)-1]
 
 	var currentStatus string
 	var updates AAUpdateSchema
@@ -1336,7 +1336,7 @@ func UpdateSalesContract(stub shim.ChaincodeStubInterface, callerId string, call
 	}
 
 	id := args[0]
-	lmd := args[1]
+	lmd := args[len(args)-1]
 
 	var currentStatus string
 	var updates SCUpdateSchema
